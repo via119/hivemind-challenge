@@ -6,3 +6,14 @@ lazy val root = (project in file("."))
   .settings(
     name := "hivemind-amazon"
   )
+
+scalacOptions ++= Seq("-Xsource:3")
+
+libraryDependencies += "dev.zio" %% "zio" % "2.0.6"
+libraryDependencies += "dev.zio" %% "zio-streams" % "2.0.6"
+libraryDependencies += "dev.zio" %% "zio-test" % "2.0.6" % Test
+libraryDependencies += "dev.zio" %% "zio-test-sbt" % "2.0.6" % Test
+libraryDependencies += "dev.zio" %% "zio-interop-cats" % "23.0.0.0"
+
+libraryDependencies += "org.http4s" %% "http4s-blaze-server" % "0.23.13"
+libraryDependencies += "org.http4s" %% "http4s-dsl" % "0.23.18"
