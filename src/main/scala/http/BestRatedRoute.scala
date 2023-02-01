@@ -18,10 +18,13 @@ object BestRatedRoute {
         for {
           request <- req.as[BestRatedRequest]
           _ <- ZIO.logInfo(s"Received request: $request")
-          r <- BestRatedService
+          response <- BestRatedService
             .run(request)
             .onError(cause => ZIO.logErrorCause("Something went wrong.", cause))
-          response <- Ok(r.asJson)
+            .foldZIO(
+              _ => InternalServerError("Unexpected error occurred."),
+              result => Ok(result.asJson)
+            )
         } yield response
       }
   }
