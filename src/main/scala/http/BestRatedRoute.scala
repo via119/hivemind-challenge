@@ -10,7 +10,7 @@ import zio.{Task, ZIO}
 import zio.interop.catz.*
 
 object BestRatedRoute {
-  val bestRatedRoute: HttpRoutes[Task] = {
+  def bestRatedRoute(filePath: String): HttpRoutes[Task] = {
     val dsl = new Http4sDsl[Task] {}
     import dsl.*
     HttpRoutes
@@ -19,7 +19,7 @@ object BestRatedRoute {
           request <- req.as[BestRatedRequest]
           _ <- ZIO.logInfo(s"Received request: $request")
           response <- BestRatedService
-            .run(request)
+            .run(filePath, request)
             .onError(cause => ZIO.logErrorCause("Something went wrong.", cause))
             .foldZIO(
               _ => InternalServerError("Unexpected error occurred."),

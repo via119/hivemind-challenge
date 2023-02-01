@@ -18,6 +18,7 @@ libraryDependencies += "dev.zio" %% "zio-interop-cats" % "23.0.0.0"
 libraryDependencies += "org.http4s" %% "http4s-blaze-server" % "0.23.13"
 libraryDependencies += "org.http4s" %% "http4s-dsl" % "0.23.18"
 libraryDependencies += "org.http4s" %% "http4s-circe" % "0.23.18"
+libraryDependencies += "com.github.scopt" %% "scopt" % "4.1.0"
 
 val circeVersion = "0.14.1"
 
