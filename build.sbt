@@ -9,6 +9,10 @@ lazy val root = (project in file("."))
 
 scalacOptions ++= Seq("-Xsource:3")
 
+libraryDependencies ++= Seq(
+  "io.getquill" %% "quill-jdbc-zio" % "4.6.0",
+  "org.postgresql" % "postgresql" % "42.5.2"
+)
 libraryDependencies += "dev.zio" %% "zio" % "2.0.6"
 libraryDependencies += "dev.zio" %% "zio-streams" % "2.0.6"
 libraryDependencies += "dev.zio" %% "zio-test" % "2.0.6" % Test

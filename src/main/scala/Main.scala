@@ -1,7 +1,11 @@
 import fs2.Stream
 import http.BestRatedRoute.bestRatedRoute
+import io.getquill.SnakeCase
+import io.getquill.jdbczio.Quill
 import org.http4s.blaze.server.BlazeServerBuilder
 import scopt.OParser
+import service.{AmazonReview, ReviewRepository}
+import service.ReviewRepository.save
 import zio.interop.catz.*
 import zio.{Scope, Task, ZIO, ZIOAppArgs}
 
@@ -21,7 +25,7 @@ object MainArgs {
 }
 
 object Main extends CatsApp {
-  def stream(filePath: String): Stream[Task, Nothing] = {
+  private def serverStream(filePath: String): Stream[Task, Nothing] = {
     import org.http4s.implicits.*
     val httpApp = bestRatedRoute(filePath).orNotFound
     for {
@@ -32,12 +36,27 @@ object Main extends CatsApp {
     } yield exitCode
   }.drain
 
+  private def fillRepository(): ZIO[ReviewRepository, Throwable, Unit] = {
+    save(AmazonReview("B000JQ0JNS", 1, 12311221))
+  }
+
   override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = for {
     args <- getArgs
     parsedArgs = OParser.parse(MainArgs.argParser, args, MainArgs(""))
     _ <- parsedArgs match {
       case Some(args) =>
-        ZIO.logInfo("Starting server.") *> stream(args.filePath).compile.drain
+        for {
+          _ <- ZIO.logInfo("Init db.")
+          _ <- fillRepository().provide(
+            ReviewRepository.live,
+            Quill.Postgres.fromNamingStrategy(SnakeCase),
+            Quill.DataSource.fromPrefix("myDatabaseConfig")
+          )
+          _ <- ZIO.logInfo("Starting server.")
+          _ <- serverStream(
+            args.filePath
+          ).compile.drain
+        } yield ()
       case None => ZIO.unit
     }
   } yield ()
