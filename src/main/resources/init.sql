@@ -1,1 +1,1 @@
-CREATE TABLE "amazon_review" ("id" SERIAL PRIMARY KEY, "asin" VARCHAR(255) NOT NULL, "overall" INTEGER NOT NULL, "review_time" BIGINT NOT NULL);
+CREATE TABLE "amazon_review" ("id" SERIAL PRIMARY KEY, "asin" VARCHAR(255) NOT NULL, "overall" INTEGER NOT NULL, "unix_review_time" BIGINT NOT NULL);

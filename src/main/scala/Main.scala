@@ -4,8 +4,9 @@ import io.getquill.SnakeCase
 import io.getquill.jdbczio.Quill
 import org.http4s.blaze.server.BlazeServerBuilder
 import scopt.OParser
-import service.{AmazonReview, ReviewRepository}
+import service.FileStream.getStream
 import service.ReviewRepository.save
+import service.{FileStream, ReviewRepository}
 import zio.interop.catz.*
 import zio.{Scope, Task, ZIO, ZIOAppArgs}
 
@@ -25,9 +26,9 @@ object MainArgs {
 }
 
 object Main extends CatsApp {
-  private def serverStream(filePath: String): Stream[Task, Nothing] = {
+  private val serverStream: Stream[Task, Nothing] = {
     import org.http4s.implicits.*
-    val httpApp = bestRatedRoute(filePath).orNotFound
+    val httpApp = bestRatedRoute.orNotFound
     for {
       exitCode <- BlazeServerBuilder[Task]
         .bindHttp(8080, "0.0.0.0")
@@ -36,8 +37,13 @@ object Main extends CatsApp {
     } yield exitCode
   }.drain
 
-  private def fillRepository(): ZIO[ReviewRepository, Throwable, Unit] = {
-    save(AmazonReview("B000JQ0JNS", 1, 12311221))
+  private def fillRepository(
+      filePath: String
+  ): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
+    for {
+      stream <- getStream(filePath)
+      _ <- stream.foreach(save)
+    } yield ()
   }
 
   override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = for {
@@ -47,15 +53,14 @@ object Main extends CatsApp {
       case Some(args) =>
         for {
           _ <- ZIO.logInfo("Init db.")
-          _ <- fillRepository().provide(
+          _ <- fillRepository(args.filePath).provide(
+            FileStream.live,
             ReviewRepository.live,
             Quill.Postgres.fromNamingStrategy(SnakeCase),
             Quill.DataSource.fromPrefix("myDatabaseConfig")
           )
           _ <- ZIO.logInfo("Starting server.")
-          _ <- serverStream(
-            args.filePath
-          ).compile.drain
+          _ <- serverStream.compile.drain
         } yield ()
       case None => ZIO.unit
     }
