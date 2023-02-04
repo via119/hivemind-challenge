@@ -14,7 +14,7 @@ object BestRatedService {
     val startTime = getTimeStamp(request.start, LocalTime.MIN)
     val endTime = getTimeStamp(request.end, LocalTime.MAX)
 
-    getBestRated(startTime, endTime, request.limit, request.min_number_reviews)
+    getBestRated(startTime, endTime, request.limit, request.minNumberReviews)
   }
 
   private def getTimeStamp(date: String, localTime: LocalTime): Long = {

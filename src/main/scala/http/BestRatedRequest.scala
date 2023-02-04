@@ -1,15 +1,17 @@
 package http
 
 import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
 case class BestRatedRequest(
     start: String,
     end: String,
     limit: Int,
-    min_number_reviews: Int
+    minNumberReviews: Int
 )
 
 object BestRatedRequest {
-  implicit val decoder: Decoder[BestRatedRequest] = deriveDecoder
+  implicit lazy val configuration: Configuration = Configuration.default.withSnakeCaseMemberNames
+  implicit val decoder: Decoder[BestRatedRequest] = deriveConfiguredDecoder
 }
