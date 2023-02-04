@@ -39,6 +39,7 @@ object Main extends CatsApp {
 
   private def fillRepository(filePath: String): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
     for {
+      _ <- ZIO.logInfo("Init db.")
       stream <- getStream(filePath)
       _ <- stream.grouped(1000).foreach(reviews => save(reviews))
     } yield ()
@@ -50,12 +51,11 @@ object Main extends CatsApp {
     _ <- parsedArgs match {
       case Some(args) =>
         for {
-          _ <- ZIO.logInfo("Init db.")
           _ <- fillRepository(args.filePath).provide(
             FileStream.live,
             ReviewRepository.live,
             Quill.Postgres.fromNamingStrategy(SnakeCase),
-            Quill.DataSource.fromPrefix("myDatabaseConfig")
+            Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
           )
           _ <- ZIO.logInfo("Starting server.")
           _ <- serverStream.compile.drain

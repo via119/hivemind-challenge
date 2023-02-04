@@ -6,6 +6,6 @@ import zio.ZIO
 object BestRatedService {
   def run(
       request: BestRatedRequest
-  ): ZIO[Any, Throwable, List[BestRatedResponse]] =
+  ): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] =
     ZIO.attempt(List(BestRatedResponse("1", 1.1)))
 }

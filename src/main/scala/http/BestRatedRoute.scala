@@ -1,11 +1,13 @@
 package http
 
 import io.circe.syntax.*
+import io.getquill.SnakeCase
+import io.getquill.jdbczio.Quill
 import org.http4s.HttpRoutes
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityDecoder.*
 import org.http4s.dsl.Http4sDsl
-import service.BestRatedService
+import service.{BestRatedService, ReviewRepository}
 import zio.{Task, ZIO}
 import zio.interop.catz.*
 
@@ -20,10 +22,14 @@ object BestRatedRoute {
           _ <- ZIO.logInfo(s"Received request: $request")
           response <- BestRatedService
             .run(request)
-            .onError(cause => ZIO.logErrorCause("Something went wrong.", cause))
             .foldZIO(
               _ => InternalServerError("Unexpected error occurred."),
               result => Ok(result.asJson)
+            )
+            .provide(
+              ReviewRepository.live,
+              Quill.Postgres.fromNamingStrategy(SnakeCase),
+              Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
             )
         } yield response
       }
