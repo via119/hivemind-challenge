@@ -1,4 +1,4 @@
-package service
+package hivemind.service
 
 import io.circe
 import zio.{Cause, ZIO, ZLayer}

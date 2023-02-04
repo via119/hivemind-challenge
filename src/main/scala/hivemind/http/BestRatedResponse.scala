@@ -1,4 +1,4 @@
-package http
+package hivemind.http
 
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder

@@ -1,4 +1,4 @@
-package http
+package hivemind.http
 
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration

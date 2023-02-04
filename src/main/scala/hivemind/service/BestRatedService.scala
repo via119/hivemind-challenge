@@ -1,7 +1,7 @@
-package service
+package hivemind.service
 
-import http.{BestRatedRequest, BestRatedResponse}
-import service.ReviewRepository.getBestRated
+import hivemind.http.{BestRatedRequest, BestRatedResponse}
+import ReviewRepository.getBestRated
 import zio.ZIO
 
 import java.time.{LocalDate, LocalTime, ZoneOffset}

@@ -1,12 +1,14 @@
+package hivemind
+
 import fs2.Stream
-import http.BestRatedRoute.bestRatedRoute
+import hivemind.http.BestRatedRoute.bestRatedRoute
+import hivemind.service.FileStream.getStream
+import hivemind.service.ReviewRepository.save
+import hivemind.service.{FileStream, ReviewRepository}
 import io.getquill.SnakeCase
 import io.getquill.jdbczio.Quill
 import org.http4s.blaze.server.BlazeServerBuilder
 import scopt.OParser
-import service.FileStream.getStream
-import service.ReviewRepository.save
-import service.{FileStream, ReviewRepository}
 import zio.interop.catz.*
 import zio.{Scope, Task, ZIO, ZIOAppArgs}
 

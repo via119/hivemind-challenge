@@ -1,5 +1,6 @@
-package http
+package hivemind.http
 
+import hivemind.service.{BestRatedService, ReviewRepository}
 import io.circe.syntax.*
 import io.getquill.SnakeCase
 import io.getquill.jdbczio.Quill
@@ -7,7 +8,6 @@ import org.http4s.HttpRoutes
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityDecoder.*
 import org.http4s.dsl.Http4sDsl
-import service.{BestRatedService, ReviewRepository}
 import zio.{Task, ZIO}
 import zio.interop.catz.*
 

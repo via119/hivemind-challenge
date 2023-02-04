@@ -1,6 +1,6 @@
-package service
+package hivemind.service
 
-import http.BestRatedResponse
+import hivemind.http.BestRatedResponse
 import io.getquill.*
 import io.getquill.jdbczio.Quill
 import zio.{Chunk, ZIO, ZLayer}
