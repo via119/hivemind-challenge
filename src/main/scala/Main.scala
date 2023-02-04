@@ -42,7 +42,7 @@ object Main extends CatsApp {
   ): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
     for {
       stream <- getStream(filePath)
-      _ <- stream.foreach(save)
+      _ <- stream.grouped(1000).foreach(reviews => save(reviews))
     } yield ()
   }
 

@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   db:
-    container_name: amazon-reviews-postgres1
+    container_name: amazon-reviews-postgres
     image: postgres:14.5
     restart: always
     environment:
