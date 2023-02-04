@@ -37,9 +37,7 @@ object Main extends CatsApp {
     } yield exitCode
   }.drain
 
-  private def fillRepository(
-      filePath: String
-  ): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
+  private def fillRepository(filePath: String): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
     for {
       stream <- getStream(filePath)
       _ <- stream.grouped(1000).foreach(reviews => save(reviews))

@@ -19,9 +19,7 @@ object ReviewRepository {
   class Live(quill: Quill.Postgres[SnakeCase]) extends ReviewRepository {
     import quill.*
 
-    override def save(
-        reviews: Chunk[AmazonReview]
-    ): ZIO[Any, Throwable, Unit] = {
+    override def save(reviews: Chunk[AmazonReview]): ZIO[Any, Throwable, Unit] = {
       val q = quote {
         liftQuery(reviews).foreach(e => query[AmazonReview].insertValue(e))
       }

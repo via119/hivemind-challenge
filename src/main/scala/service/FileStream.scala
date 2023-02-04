@@ -9,28 +9,17 @@ trait FileStream {
 }
 
 object FileStream {
-  def getStream(
-      filePath: String
-  ): ZIO[FileStream, Throwable, ZStream[Any, Throwable, AmazonReview]] =
+  def getStream(filePath: String): ZIO[FileStream, Throwable, ZStream[Any, Throwable, AmazonReview]] =
     ZIO.environmentWith[FileStream](_.get.getStream(filePath))
 
   val live = ZLayer.succeed(new FileStream {
-    override def getStream(
-        filePath: String
-    ): ZStream[Any, Throwable, AmazonReview] =
+    override def getStream(filePath: String): ZStream[Any, Throwable, AmazonReview] =
       ZStream
-        .fromIteratorScoped(
-          ZIO
-            .fromAutoCloseable(
-              ZIO.attempt(scala.io.Source.fromFile(filePath))
-            )
-            .map(_.getLines())
-        )
+        .fromIteratorScoped(ZIO.fromAutoCloseable(ZIO.attempt(scala.io.Source.fromFile(filePath))).map(_.getLines()))
         .mapZIO(line => decodeReview(line))
 
     def decodeReview(line: String): ZIO[Any, Throwable, AmazonReview] = {
-      val parseResult: Either[circe.Error, AmazonReview] =
-        decode[AmazonReview](line)
+      val parseResult: Either[circe.Error, AmazonReview] = decode[AmazonReview](line)
 
       parseResult match {
         case Left(decodingFailure) =>
