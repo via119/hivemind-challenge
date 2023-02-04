@@ -19,17 +19,11 @@ object BestRatedRoute {
       .of[Task] { case req @ GET -> Root / "amazon" / "best-rated" =>
         for {
           request <- req.as[BestRatedRequest]
-          _ <- ZIO.logInfo(s"Received request: $request")
           response <- BestRatedService
             .run(request)
             .foldZIO(
               _ => InternalServerError("Unexpected error occurred."),
               result => Ok(result.asJson)
-            )
-            .provide(
-              ReviewRepository.live,
-              Quill.Postgres.fromNamingStrategy(SnakeCase),
-              Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
             )
         } yield response
       }

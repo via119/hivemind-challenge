@@ -2,32 +2,43 @@ package hivemind
 
 import fs2.Stream
 import hivemind.http.BestRatedRoute.bestRatedRoute
-import hivemind.service.FileStream.getStream
-import hivemind.service.ReviewRepository.{cleanup, save}
-import hivemind.service.{FileStream, ReviewRepository}
-import io.getquill.SnakeCase
-import io.getquill.jdbczio.Quill
+import hivemind.service.BestRatedService
+import hivemind.service.BestRatedService.setup
 import org.http4s.blaze.server.BlazeServerBuilder
 import scopt.OParser
 import zio.interop.catz.*
 import zio.{Scope, Task, ZIO, ZIOAppArgs}
 
-case class MainArgs(filePath: String)
+case class MainArgs(reviewFilePath: String)
 
 object MainArgs {
   private val builder = OParser.builder[MainArgs]
   val argParser = {
     import builder.*
     OParser.sequence(
-      opt[String]('f', "filePath")
+      opt[String]('f', "reviewFilePath")
         .required()
-        .action((a, c) => c.copy(filePath = a))
+        .action((a, c) => c.copy(reviewFilePath = a))
         .text("file path is required")
     )
   }
 }
 
 object Main extends CatsApp {
+  override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = for {
+    args <- getArgs
+    parsedArgs = OParser.parse(MainArgs.argParser, args, MainArgs(""))
+    _ <- parsedArgs match {
+      case Some(args) =>
+        for {
+          _ <- BestRatedService.setup(args.reviewFilePath)
+          _ <- ZIO.logInfo("Starting server.")
+          _ <- serverStream.compile.drain
+        } yield ()
+      case None => ZIO.unit
+    }
+  } yield ()
+
   private val serverStream: Stream[Task, Nothing] = {
     import org.http4s.implicits.*
     val httpApp = bestRatedRoute.orNotFound
@@ -38,32 +49,4 @@ object Main extends CatsApp {
         .serve
     } yield exitCode
   }.drain
-
-  private def fillRepository(filePath: String): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
-    for {
-      _ <- ZIO.logInfo("Init db.")
-      _ <- cleanup()
-      stream <- getStream(filePath)
-      _ <- stream.grouped(1000).foreach(reviews => save(reviews))
-    } yield ()
-  }
-
-  override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = for {
-    args <- getArgs
-    parsedArgs = OParser.parse(MainArgs.argParser, args, MainArgs(""))
-    _ <- parsedArgs match {
-      case Some(args) =>
-        for {
-          _ <- fillRepository(args.filePath).provide(
-            FileStream.live,
-            ReviewRepository.live,
-            Quill.Postgres.fromNamingStrategy(SnakeCase),
-            Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
-          )
-          _ <- ZIO.logInfo("Starting server.")
-          _ <- serverStream.compile.drain
-        } yield ()
-      case None => ZIO.unit
-    }
-  } yield ()
 }
