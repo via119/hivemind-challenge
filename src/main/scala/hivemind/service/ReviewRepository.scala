@@ -7,6 +7,7 @@ import zio.{Chunk, ZIO, ZLayer}
 trait ReviewRepository {
   def save(reviews: Chunk[AmazonReview]): ZIO[Any, Throwable, Unit]
   def getBestRated(start: Long, end: Long, limit: Int, minReviews: Int): ZIO[Any, Throwable, List[BestRatedResponse]]
+  def cleanup(): ZIO[Any, Throwable, Unit]
 }
 
 object ReviewRepository {
@@ -22,6 +23,9 @@ object ReviewRepository {
       minReviews: Int
   ): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] =
     ZIO.environmentWithZIO[ReviewRepository](_.get.getBestRated(start, end, limit, minReviews))
+
+  def cleanup(): ZIO[ReviewRepository, Throwable, Unit] =
+    ZIO.environmentWithZIO[ReviewRepository](_.get.cleanup())
 
   val live: ZLayer[Quill.Postgres[SnakeCase], Nothing, ReviewRepository] =
     ZLayer.fromFunction(new Live(_))
@@ -52,6 +56,11 @@ object ReviewRepository {
           .map(r => BestRatedResponse(r._1, r._3))
       }
       run(q)
+    }
+
+    override def cleanup(): ZIO[Any, Throwable, Unit] = {
+      val q = quote { query[AmazonReview].delete }
+      run(q).unit
     }
   }
 }

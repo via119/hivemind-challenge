@@ -3,7 +3,7 @@ package hivemind
 import fs2.Stream
 import hivemind.http.BestRatedRoute.bestRatedRoute
 import hivemind.service.FileStream.getStream
-import hivemind.service.ReviewRepository.save
+import hivemind.service.ReviewRepository.{cleanup, save}
 import hivemind.service.{FileStream, ReviewRepository}
 import io.getquill.SnakeCase
 import io.getquill.jdbczio.Quill
@@ -42,6 +42,7 @@ object Main extends CatsApp {
   private def fillRepository(filePath: String): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
     for {
       _ <- ZIO.logInfo("Init db.")
+      _ <- cleanup()
       stream <- getStream(filePath)
       _ <- stream.grouped(1000).foreach(reviews => save(reviews))
     } yield ()
