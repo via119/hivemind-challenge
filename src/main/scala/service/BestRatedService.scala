@@ -11,13 +11,14 @@ object BestRatedService {
   def run(
       request: BestRatedRequest
   ): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] = {
-    val startTime = getTimeStamp(request.start)
-    val endTime = getTimeStamp(request.end)
+    val startTime = getTimeStamp(request.start, LocalTime.MIN)
+    val endTime = getTimeStamp(request.end, LocalTime.MAX)
+
     getBestRated(startTime, endTime, request.limit, request.min_number_reviews)
   }
 
-  private def getTimeStamp(date: String): Long = {
+  private def getTimeStamp(date: String, localTime: LocalTime): Long = {
     val dateFormatter = { DateTimeFormatter.ofPattern("dd.MM.yyyy") }
-    LocalDate.parse(date, dateFormatter).toEpochSecond(LocalTime.MIN, ZoneOffset.UTC)
+    LocalDate.parse(date, dateFormatter).toEpochSecond(localTime, ZoneOffset.UTC)
   }
 }
