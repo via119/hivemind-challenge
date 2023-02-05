@@ -11,8 +11,8 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalTime, ZoneOffset}
 
 object BestRatedService {
-  val quillLayer = Quill.Postgres.fromNamingStrategy(SnakeCase)
-  val dsLayer = Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
+  private val quillLayer = Quill.Postgres.fromNamingStrategy(SnakeCase)
+  private val dsLayer = Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
 
   def setup(reviewFilePath: String): ZIO[Any, Throwable, Unit] = {
     setupRepository(reviewFilePath, 1000).provide(ReviewRepository.live, FileStream.live, quillLayer, dsLayer)
@@ -22,15 +22,6 @@ object BestRatedService {
     getBestRatedReviews(request).provide(ReviewRepository.live, quillLayer, dsLayer)
   }
 
-  def getBestRatedReviews(request: BestRatedRequest): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] = {
-    val startTimestamp = getTimestamp(request.start, LocalTime.MIN)
-    val endTimestamp = getTimestamp(request.end, LocalTime.MAX)
-    for {
-      _ <- ZIO.logInfo(s"Received request: $request")
-      response <- ReviewRepository.getBestRated(startTimestamp, endTimestamp, request.limit, request.minNumberReviews)
-    } yield response
-  }
-
   def setupRepository(reviewFilePath: String, batchSize: Int): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
     for {
       _ <- ZIO.logInfo("Init db.")
@@ -38,6 +29,15 @@ object BestRatedService {
       stream <- getAmazonReviewStream(reviewFilePath)
       _ <- stream.grouped(batchSize).foreach(reviews => save(reviews))
     } yield ()
+  }
+
+  def getBestRatedReviews(request: BestRatedRequest): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] = {
+    val startTimestamp = getTimestamp(request.start, LocalTime.MIN)
+    val endTimestamp = getTimestamp(request.end, LocalTime.MAX)
+    for {
+      _ <- ZIO.logInfo(s"Received request: $request")
+      response <- ReviewRepository.getBestRated(startTimestamp, endTimestamp, request.limit, request.minNumberReviews)
+    } yield response
   }
 
   private def getTimestamp(date: String, localTime: LocalTime): Long = {
