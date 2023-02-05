@@ -1,9 +1,10 @@
 package hivemind.service
 
 import io.circe
-import zio.{Cause, ZIO, ZLayer}
-import zio.stream.ZStream
 import io.circe.parser.decode
+import zio.stream.ZStream
+import zio.{Cause, ZIO, ZLayer}
+
 trait FileStream {
   def getAmazonReviewStream(filePath: String): ZStream[Any, Throwable, AmazonReview]
 }

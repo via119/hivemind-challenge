@@ -1,8 +1,8 @@
 package hivemind.http
 
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.{Decoder, Encoder}
 
 case class BestRatedRequest(
     start: String,

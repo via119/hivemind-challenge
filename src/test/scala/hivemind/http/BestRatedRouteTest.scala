@@ -15,6 +15,7 @@ import zio.{Scope, ZIO}
 object BestRatedRouteTest extends ZIOSpecDefault {
   val request = BestRatedRequest("03.04.2002", "19.08.2012", 100, 10)
   val expectedResponse = List(BestRatedResponse("r1", BigDecimal(4.5)))
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("BestRatedRoute")(
     test("returns response from best rated service") {
       for {

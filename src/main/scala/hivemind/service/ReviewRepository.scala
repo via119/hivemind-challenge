@@ -4,6 +4,7 @@ import hivemind.http.BestRatedResponse
 import io.getquill.*
 import io.getquill.jdbczio.Quill
 import zio.{Chunk, ZIO, ZLayer}
+
 trait ReviewRepository {
   def save(reviews: Chunk[AmazonReview]): ZIO[Any, Throwable, Unit]
   def getBestRated(start: Long, end: Long, limit: Int, minReviews: Int): ZIO[Any, Throwable, List[BestRatedResponse]]

@@ -3,10 +3,9 @@ package hivemind.service
 import hivemind.http.{BestRatedRequest, BestRatedResponse}
 import hivemind.service.FileStreamMock.streamFromFile
 import hivemind.service.ReviewRepositoryMock.{bestRatedParameters, cleanupCalled, savedReviews}
-import zio.Scope
-import zio.test.Assertion.{equalTo, isSome, isTrue}
+import zio.{Runtime, Scope}
 import zio.test.*
-import zio.Runtime
+import zio.test.Assertion.{equalTo, isSome, isTrue}
 
 import java.time.{LocalDateTime, ZoneOffset}
 
