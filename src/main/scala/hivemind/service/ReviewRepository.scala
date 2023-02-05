@@ -14,6 +14,9 @@ object ReviewRepository {
   def cleanup(): ZIO[ReviewRepository, Throwable, Unit] =
     ZIO.environmentWithZIO[ReviewRepository](_.get.cleanup())
 
+  def save(reviews: Chunk[AmazonReview]): ZIO[ReviewRepository, Throwable, Unit] =
+    ZIO.environmentWithZIO[ReviewRepository](_.get.save(reviews))
+
   val live: ZLayer[Quill.Postgres[SnakeCase], Nothing, ReviewRepository] =
     ZLayer.fromFunction(new Live(_))
 
@@ -35,7 +38,7 @@ object ReviewRepository {
     ): ZIO[Any, Throwable, List[BestRatedResponse]] = {
       val q = quote {
         query[AmazonReview]
-          .filter(r => r.unixReviewTime > lift(start) && r.unixReviewTime < lift(end))
+          .filter(r => r.unixReviewTime >= lift(start) && r.unixReviewTime <= lift(end))
           .groupByMap(r => r.asin)(r => (r.asin, count(r.overall), avg(r.overall)))
           .filter(r => r._2 >= lift(minReviews))
           .sortBy(r => r._3)(Ord.desc)

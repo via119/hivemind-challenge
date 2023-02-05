@@ -11,3 +11,13 @@ services:
       - 25432:5432
     volumes:
       - ./src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+  test-db:
+    container_name: amazon-reviews-postgres-test
+    image: postgres:14.5
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: titkos
+    ports:
+      - 35432:5432
+    volumes:
+      - ./src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
