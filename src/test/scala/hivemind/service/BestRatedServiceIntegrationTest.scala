@@ -66,7 +66,7 @@ object BestRatedServiceIntegrationTest extends ZIOSpecDefault {
           )
         } yield assertTrue(bestRatedResponse.size == 1) &&
           assertTrue(bestRatedResponse.head.asin == "p1") &&
-          assert(bestRatedResponse.head.average_rating)(
+          assert(bestRatedResponse.head.averageRating)(
             approximatelyEquals(BigDecimal(3.6666666666666667), BigDecimal(0.000001))
           )
       }
