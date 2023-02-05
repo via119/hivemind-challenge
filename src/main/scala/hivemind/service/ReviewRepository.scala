@@ -11,19 +11,6 @@ trait ReviewRepository {
 }
 
 object ReviewRepository {
-  def save(
-      reviews: Chunk[AmazonReview]
-  ): ZIO[ReviewRepository, Throwable, Unit] =
-    ZIO.environmentWithZIO[ReviewRepository](_.get.save(reviews))
-
-  def getBestRated(
-      start: Long,
-      end: Long,
-      limit: Int,
-      minReviews: Int
-  ): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] =
-    ZIO.environmentWithZIO[ReviewRepository](_.get.getBestRated(start, end, limit, minReviews))
-
   def cleanup(): ZIO[ReviewRepository, Throwable, Unit] =
     ZIO.environmentWithZIO[ReviewRepository](_.get.cleanup())
 

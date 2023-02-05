@@ -1,13 +1,14 @@
 package hivemind
 
 import fs2.Stream
-import hivemind.http.BestRatedRoute.bestRatedRoute
-import hivemind.service.BestRatedService
-import hivemind.service.BestRatedService.setup
+import hivemind.http.BestRatedRoute
+import hivemind.service.{BestRatedService, FileStream, ReviewRepository}
+import io.getquill.SnakeCase
+import io.getquill.jdbczio.Quill
 import org.http4s.blaze.server.BlazeServerBuilder
 import scopt.OParser
 import zio.interop.catz.*
-import zio.{Scope, Task, ZIO, ZIOAppArgs}
+import zio.{Scope, ZIO, ZIOAppArgs}
 
 case class MainArgs(reviewFilePath: String)
 
@@ -25,25 +26,40 @@ object MainArgs {
 }
 
 object Main extends CatsApp {
+  type BestRatedIO[A] = ZIO[BestRatedService, Throwable, A]
+
+  private val quillLayer = Quill.Postgres.fromNamingStrategy(SnakeCase)
+  private val dsLayer = Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
+
   override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = for {
     args <- getArgs
     parsedArgs = OParser.parse(MainArgs.argParser, args, MainArgs(""))
     _ <- parsedArgs match {
       case Some(args) =>
-        for {
-          _ <- BestRatedService.setup(args.reviewFilePath)
-          _ <- ZIO.logInfo("Starting server.")
-          _ <- serverStream.compile.drain
-        } yield ()
+        run(args.reviewFilePath).provide(
+          BestRatedService.live,
+          ReviewRepository.live,
+          FileStream.live,
+          quillLayer,
+          dsLayer
+        )
       case None => ZIO.unit
     }
   } yield ()
 
-  private val serverStream: Stream[Task, Nothing] = {
-    import org.http4s.implicits.*
-    val httpApp = bestRatedRoute.orNotFound
+  private def run(reviewFilePath: String): ZIO[BestRatedService, Throwable, Unit] = {
     for {
-      exitCode <- BlazeServerBuilder[Task]
+      _ <- BestRatedService.setup(reviewFilePath, batchSize = 1000)
+      _ <- ZIO.logInfo("Starting server.")
+      _ <- serviceStream.compile.drain
+    } yield ()
+  }
+
+  private val serviceStream: Stream[BestRatedIO, Nothing] = {
+    import org.http4s.implicits.*
+    val httpApp = BestRatedRoute.service.orNotFound
+    for {
+      exitCode <- BlazeServerBuilder[BestRatedIO]
         .bindHttp(8080, "0.0.0.0")
         .withHttpApp(httpApp)
         .serve

@@ -1,22 +1,20 @@
 package hivemind.http
 
-import hivemind.service.{BestRatedService, ReviewRepository}
+import hivemind.Main.BestRatedIO
+import hivemind.service.BestRatedService
 import io.circe.syntax.*
-import io.getquill.SnakeCase
-import io.getquill.jdbczio.Quill
 import org.http4s.HttpRoutes
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityDecoder.*
 import org.http4s.dsl.Http4sDsl
-import zio.{Task, ZIO}
 import zio.interop.catz.*
 
 object BestRatedRoute {
-  val bestRatedRoute: HttpRoutes[Task] = {
-    val dsl = new Http4sDsl[Task] {}
+  val service: HttpRoutes[BestRatedIO] = {
+    val dsl = new Http4sDsl[BestRatedIO] {}
     import dsl.*
     HttpRoutes
-      .of[Task] { case req @ GET -> Root / "amazon" / "best-rated" =>
+      .of[BestRatedIO] { case req @ GET -> Root / "amazon" / "best-rated" =>
         for {
           request <- req.as[BestRatedRequest]
           response <- BestRatedService

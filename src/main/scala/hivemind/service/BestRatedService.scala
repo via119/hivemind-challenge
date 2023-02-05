@@ -1,47 +1,60 @@
 package hivemind.service
 
 import hivemind.http.{BestRatedRequest, BestRatedResponse}
-import hivemind.service.FileStream.getAmazonReviewStream
-import hivemind.service.ReviewRepository.{cleanup, save}
-import io.getquill.SnakeCase
-import io.getquill.jdbczio.Quill
-import zio.ZIO
+import zio.{Task, ZIO, ZLayer}
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalTime, ZoneOffset}
 
+trait BestRatedService {
+  def setup(reviewFilePath: String, batchSize: Int): Task[Unit]
+  def run(request: BestRatedRequest): Task[List[BestRatedResponse]]
+}
+
 object BestRatedService {
-  private val quillLayer = Quill.Postgres.fromNamingStrategy(SnakeCase)
-  private val dsLayer = Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
 
-  def setup(reviewFilePath: String): ZIO[Any, Throwable, Unit] = {
-    setupRepository(reviewFilePath, 1000).provide(ReviewRepository.live, FileStream.live, quillLayer, dsLayer)
+  def setup(reviewFilePath: String, batchSize: Int): ZIO[BestRatedService, Throwable, Unit] = {
+    ZIO.environmentWithZIO[BestRatedService](_.get.setup(reviewFilePath, batchSize))
   }
 
-  def run(request: BestRatedRequest): ZIO[Any, Throwable, List[BestRatedResponse]] = {
-    getBestRatedReviews(request).provide(ReviewRepository.live, quillLayer, dsLayer)
+  def run(request: BestRatedRequest): ZIO[BestRatedService, Throwable, List[BestRatedResponse]] = {
+    ZIO.environmentWithZIO[BestRatedService](_.get.run(request))
   }
 
-  def setupRepository(reviewFilePath: String, batchSize: Int): ZIO[FileStream & ReviewRepository, Throwable, Unit] = {
+  val live: ZLayer[FileStream & ReviewRepository, Nothing, BestRatedService] = ZLayer.fromZIO(
     for {
-      _ <- ZIO.logInfo("Init db.")
-      _ <- cleanup().onError(err => ZIO.logErrorCause("Failed to delete data from repository at startup.", err))
-      stream <- getAmazonReviewStream(reviewFilePath)
-      _ <- stream.grouped(batchSize).foreach(reviews => save(reviews))
-    } yield ()
-  }
+      fileStream <- ZIO.service[FileStream]
+      reviewRepository <- ZIO.service[ReviewRepository]
+    } yield new BestRatedService {
+      override def setup(reviewFilePath: String, batchSize: Int): Task[Unit] = for {
+        _ <- ZIO.logInfo("Init db.")
+        _ <- reviewRepository
+          .cleanup()
+          .onError(err => ZIO.logErrorCause("Failed to delete data from repository at startup.", err))
+        stream = fileStream.getAmazonReviewStream(reviewFilePath)
+        _ <- stream.grouped(batchSize).foreach(reviews => reviewRepository.save(reviews))
+      } yield ()
 
-  def getBestRatedReviews(request: BestRatedRequest): ZIO[ReviewRepository, Throwable, List[BestRatedResponse]] = {
-    val startTimestamp = getTimestamp(request.start, LocalTime.MIN)
-    val endTimestamp = getTimestamp(request.end, LocalTime.MAX)
-    for {
-      _ <- ZIO.logInfo(s"Received request: $request")
-      response <- ReviewRepository.getBestRated(startTimestamp, endTimestamp, request.limit, request.minNumberReviews)
-    } yield response
-  }
+      override def run(request: BestRatedRequest): Task[List[BestRatedResponse]] = {
+        val startTimestamp = getTimestamp(request.start, LocalTime.MIN)
+        val endTimestamp = getTimestamp(request.end, LocalTime.MAX)
+        for {
+          _ <- ZIO.logInfo(s"Received request: $request")
+          response <- reviewRepository.getBestRated(
+            startTimestamp,
+            endTimestamp,
+            request.limit,
+            request.minNumberReviews
+          )
+        } yield response
+      }
 
-  private def getTimestamp(date: String, localTime: LocalTime): Long = {
-    val dateFormatter = { DateTimeFormatter.ofPattern("dd.MM.yyyy") }
-    LocalDate.parse(date, dateFormatter).toEpochSecond(localTime, ZoneOffset.UTC)
-  }
+      private def getTimestamp(date: String, localTime: LocalTime): Long = {
+        val dateFormatter = {
+          DateTimeFormatter.ofPattern("dd.MM.yyyy")
+        }
+        LocalDate.parse(date, dateFormatter).toEpochSecond(localTime, ZoneOffset.UTC)
+      }
+    }
+  )
 }

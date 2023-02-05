@@ -1,7 +1,6 @@
 package hivemind.service
 
 import hivemind.http.{BestRatedRequest, BestRatedResponse}
-import hivemind.service.BestRatedService.{getBestRatedReviews, setupRepository}
 import hivemind.service.FileStreamMock.streamFromFile
 import hivemind.service.ReviewRepositoryMock.{bestRatedParameters, cleanupCalled, savedReviews}
 import zio.Scope
@@ -18,35 +17,35 @@ object BestRatedServiceTest extends ZIOSpecDefault {
   val response = List(BestRatedResponse("1", BigDecimal(4.5)))
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("BestRatedService")(
-    suite("setupRepository")(
+    suite("setup")(
       test("calls cleanup") {
         for {
-          _ <- setupRepository(filePath, 10)
+          _ <- BestRatedService.setup(filePath, 10)
           cleanupCalled <- cleanupCalled
         } yield assert(cleanupCalled)(isTrue)
-      }.provide(FileStreamMock.make(Nil), ReviewRepositoryMock.make(Nil)),
+      }.provide(BestRatedService.live, FileStreamMock.make(Nil), ReviewRepositoryMock.make(Nil)),
       test("saves reviews from file to the repository") {
         for {
-          _ <- setupRepository(filePath, 10)
+          _ <- BestRatedService.setup(filePath, 10)
           streamFromFile <- streamFromFile
         } yield assertTrue(streamFromFile.contains(filePath))
-      }.provide(FileStreamMock.make(Nil), ReviewRepositoryMock.make(Nil)),
+      }.provide(BestRatedService.live, FileStreamMock.make(Nil), ReviewRepositoryMock.make(Nil)),
       test("calls save in batches") {
         for {
-          _ <- setupRepository(filePath, 9)
+          _ <- BestRatedService.setup(filePath, 9)
           savedReviews <- savedReviews
         } yield assert(savedReviews)(equalTo(List(List(reviews.last), reviews.init)))
-      }.provide(FileStreamMock.make(reviews), ReviewRepositoryMock.make(Nil))
+      }.provide(BestRatedService.live, FileStreamMock.make(reviews), ReviewRepositoryMock.make(Nil))
     ),
-    suite("getBestRatedReviews")(
+    suite("run")(
       test("gives back result from repository") {
         for {
-          result <- getBestRatedReviews(request)
+          result <- BestRatedService.run(request)
         } yield assertTrue(result == response)
-      }.provide(ReviewRepositoryMock.make(response)),
+      }.provide(BestRatedService.live, FileStreamMock.make(Nil), ReviewRepositoryMock.make(response)),
       test("calls repository with the correct parameters") {
         for {
-          _ <- getBestRatedReviews(request)
+          _ <- BestRatedService.run(request)
           params <- bestRatedParameters
         } yield assert(params)(isSome) && {
           val (start, end, limit, minReviews) = params.get
@@ -57,7 +56,7 @@ object BestRatedServiceTest extends ZIOSpecDefault {
             equalTo(LocalDateTime.parse("2012-08-19T23:59:59"))
           ) && assertTrue(limit == request.limit) && assertTrue(minReviews == request.minNumberReviews)
         }
-      }.provide(ReviewRepositoryMock.make(Nil))
+      }.provide(BestRatedService.live, FileStreamMock.make(Nil), ReviewRepositoryMock.make(Nil))
     )
   ).provideLayer(Runtime.removeDefaultLoggers)
 }

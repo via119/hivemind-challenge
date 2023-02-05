@@ -9,9 +9,6 @@ trait FileStream {
 }
 
 object FileStream {
-  def getAmazonReviewStream(filePath: String): ZIO[FileStream, Throwable, ZStream[Any, Throwable, AmazonReview]] =
-    ZIO.environmentWith[FileStream](_.get.getAmazonReviewStream(filePath))
-
   val live = ZLayer.succeed(new FileStream {
     override def getAmazonReviewStream(filePath: String): ZStream[Any, Throwable, AmazonReview] =
       ZStream
