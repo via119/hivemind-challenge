@@ -28,26 +28,30 @@ object MainArgs {
 object Main extends CatsApp {
   type BestRatedIO[A] = ZIO[BestRatedService, Throwable, A]
 
-  private val quillLayer = Quill.Postgres.fromNamingStrategy(SnakeCase)
-  private val dsLayer = Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
-
+  /** Reads command line arguments and provides ZIO layers for runBestRatedService. It reads PostgreSQL config from
+    * application.conf
+    */
   override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = for {
     args <- getArgs
     parsedArgs = OParser.parse(MainArgs.argParser, args, MainArgs(""))
     _ <- parsedArgs match {
       case Some(args) =>
-        run(args.reviewFilePath).provide(
+        runBestRatedService(args.reviewFilePath).provide(
           BestRatedService.live,
           ReviewRepository.live,
           FileStream.live,
-          quillLayer,
-          dsLayer
+          Quill.Postgres.fromNamingStrategy(SnakeCase),
+          Quill.DataSource.fromPrefix("amazonReviewDatabaseConfig")
         )
       case None => ZIO.unit
     }
   } yield ()
 
-  private def run(reviewFilePath: String): ZIO[BestRatedService, Throwable, Unit] = {
+  /** Prepares the PostgreSQL table and starts a web service for best rated product requests.
+    * @param reviewFilePath
+    *   Path to data file containing amazon reviews.
+    */
+  private def runBestRatedService(reviewFilePath: String): ZIO[BestRatedService, Throwable, Unit] = {
     for {
       _ <- BestRatedService.setup(reviewFilePath, batchSize = 1000)
       _ <- ZIO.logInfo("Starting server.")

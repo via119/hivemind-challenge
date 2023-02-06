@@ -48,14 +48,18 @@ object BestRatedServiceTest extends ZIOSpecDefault {
           params <- bestRatedParameters
         } yield assert(params)(isSome) && {
           val (start, end, limit, minReviews) = params.get
-          assert(LocalDateTime.ofEpochSecond(start, 0, ZoneOffset.UTC))(
-            equalTo(LocalDateTime.parse("2002-04-03T00:00:00"))
-          ) &&
-          assert(LocalDateTime.ofEpochSecond(end, 0, ZoneOffset.UTC))(
-            equalTo(LocalDateTime.parse("2012-08-19T23:59:59"))
-          ) && assertTrue(limit == request.limit) && assertTrue(minReviews == request.minNumberReviews)
+          assertTimestamp(start, expectedDate = "2002-04-03T00:00:00") &&
+          assertTimestamp(end, expectedDate = "2012-08-19T23:59:59") &&
+          assertTrue(limit == request.limit) &&
+          assertTrue(minReviews == request.minNumberReviews)
         }
       }.provide(BestRatedService.live, FileStreamMock.make(Nil), ReviewRepositoryMock.make(Nil))
     )
   ).provideLayer(Runtime.removeDefaultLoggers)
+
+  private def assertTimestamp(start: Long, expectedDate: String): TestResult = {
+    assert(LocalDateTime.ofEpochSecond(start, 0, ZoneOffset.UTC))(
+      equalTo(LocalDateTime.parse(expectedDate))
+    )
+  }
 }

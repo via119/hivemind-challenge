@@ -9,6 +9,7 @@ import org.http4s.circe.CirceEntityDecoder.*
 import org.http4s.dsl.Http4sDsl
 import zio.interop.catz.*
 
+/** API for best rated products search. */
 object BestRatedRoute {
   val service: HttpRoutes[BestRatedIO] = {
     val dsl = new Http4sDsl[BestRatedIO] {}

@@ -6,6 +6,13 @@ import zio.stream.ZStream
 import zio.{Cause, ZIO, ZLayer}
 
 trait FileStream {
+
+  /** Iterates over the lines of the file and decodes them to AmazonReview class.
+    * @param filePath
+    *   Path to data file containing amazon reviews.
+    * @return
+    *   ZStream of reviews
+    */
   def getAmazonReviewStream(filePath: String): ZStream[Any, Throwable, AmazonReview]
 }
 

@@ -7,7 +7,20 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalTime, ZoneOffset}
 
 trait BestRatedService {
+
+  /** Cleans up the PostgreSQL table and then inserts the content of the file.
+    * @param reviewFilePath
+    *   path to data file containing amazon reviews.
+    * @param batchSize
+    *   processing size for batch inserts
+    */
   def setup(reviewFilePath: String, batchSize: Int): Task[Unit]
+
+  /** @param request
+    *   request from web service for best rated products
+    * @return
+    *   list of best rated products
+    */
   def run(request: BestRatedRequest): Task[List[BestRatedResponse]]
 }
 

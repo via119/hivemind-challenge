@@ -5,9 +5,26 @@ import io.getquill.*
 import io.getquill.jdbczio.Quill
 import zio.{Chunk, ZIO, ZLayer}
 
+/** Able to perform queries on 'amazon_review' table in PostgreSQL. */
 trait ReviewRepository {
+
+  /** Saves amazon reviews to the table. */
   def save(reviews: Chunk[AmazonReview]): ZIO[Any, Throwable, Unit]
+
+  /** @param start
+    *   start of the date range in UTC
+    * @param end
+    *   end of the date range in UTC
+    * @param limit
+    *   maximum number of products to return
+    * @param minReviews
+    *   only consider products that have minReviews number of reviews
+    * @return
+    *   list of best rated products
+    */
   def getBestRated(start: Long, end: Long, limit: Int, minReviews: Int): ZIO[Any, Throwable, List[BestRatedResponse]]
+
+  /** Deletes every row from the table. */
   def cleanup(): ZIO[Any, Throwable, Unit]
 }
 
@@ -21,7 +38,7 @@ object ReviewRepository {
   val live: ZLayer[Quill.Postgres[SnakeCase], Nothing, ReviewRepository] =
     ZLayer.fromFunction(new Live(_))
 
-  class Live(quill: Quill.Postgres[SnakeCase]) extends ReviewRepository {
+  private class Live(quill: Quill.Postgres[SnakeCase]) extends ReviewRepository {
     import quill.*
 
     override def save(reviews: Chunk[AmazonReview]): ZIO[Any, Throwable, Unit] = {
